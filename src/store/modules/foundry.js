@@ -15,10 +15,14 @@ const ADDR_ETH_ERC20 = '0x5011D48D4265b6fB8228600a111b2fAa1fDA3139'
 const ADDR_SOLID_FOUNDRY = '0xd445a3bd4fd38ab22021f95eddf18a62d0f86c43'
 const ADDR_DAI_ERC20 = '0x40ef836B1B8418F3ad17f7fA07eFE7c8dBBdC147'
 
-function divideBy18 (amt) {
+function toEthValue (amt) {
   let etherValue = amt / 10 ** 18;
   // let toFixed = Number(etherValue).toFixed(2)
   return etherValue
+}
+function toWeiValue (amt) {
+  let weiValue = amt * 10 ** 18;
+  return weiValue
 }
 
 const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -31,6 +35,8 @@ const state = {
   daiBalance: 12,
   foundryTotalSupply: 0,
   solidDaiBalance: 12,
+  solidDaiContractBalance: 0.00,
+  claimRewardsValue: 0.00,
   contracts: {
     solidFoundry: null,
     daiErc20: null,
@@ -58,20 +64,34 @@ const getters = {
   getSolidDaiBalance (state) {
     return state.solidDaiBalance;
   },
+  getSolidDaiContractBalance (state) {
+    return state.solidDaiContractBalance;
+  },
   getApproveValue (state) {
     return state.approve
+  },
+  getRewardsValue (state) {
+    return state.claimRewardsValue
   }
 }
 
 const actions = {
   async connect ({ commit }) {
     let currentAddress = await signer.getAddress();
-
     let ethBalance = await provider.getBalance(currentAddress)
     ethBalance = ethBalance / 10 ** 18
 
-    commit('set_account', currentAddress)
-    commit('set_balance', ethBalance)
+    window.ethereum.request({
+      method: 'eth_requestAccounts'
+    }).then((accounts) => {
+      if (accounts.length == 0) {
+        console.log("No connected");
+        alert('You should conect an account through metamsk')
+      } else {
+        commit('set_account', accounts[0])
+        commit('set_balance', ethBalance)
+      }
+    })
   },
   approveMintOnBuy ({ state, commit }) {
     const billDai = ethers.utils.parseUnits("1000000000.0", 18);
@@ -146,28 +166,52 @@ const mutations = {
   approve_accout (state, amt) {
     state.approve = amt;
   },
+  set_rewards (state, reward) {
+    state.claimRewardsValue = reward
+  },
   async read_contract (state, address) {
     // total supply 
     let supply = await state.contracts.solidFoundry.totalSupply()
     supply = supply / 10 ** 18;
     state.foundryTotalSupply = supply;
+    state.account = address;
 
     // dai balance
     let daiBalance = await state.contracts.daiErc20.balanceOf(address);
-    daiBalance = divideBy18(daiBalance);
+    daiBalance = toEthValue(daiBalance);
     state.daiBalance = daiBalance;
 
     // SOLID DAI BALANCE
     let solidDaiBalance = await state.contracts.solidFoundry.balanceOf(address);
-    solidDaiBalance = divideBy18(solidDaiBalance)
+    solidDaiBalance = toEthValue(solidDaiBalance)
     state.solidDaiBalance = solidDaiBalance;
 
+    // SOLID CONTRACT DAI BALANCE
+    let solidDaiContractBalance = await state.contracts.daiErc20.balanceOf(ADDR_SOLID_FOUNDRY);
+    solidDaiContractBalance = toEthValue(solidDaiContractBalance)
+    state.solidDaiContractBalance = solidDaiContractBalance;
+
+    // allowance value
     let allowanceValue = await state.contracts.daiErc20.allowance(
       address,
       ADDR_SOLID_FOUNDRY
     );
     state.approve = allowanceValue / 10 ** 18;
 
+    // claim reward
+    const stakedBalance = toWeiValue(state.solidDaiBalance)
+    const reward = await state.contracts.solidFoundry.reward(state.account)
+    let new_reward = parseInt(reward)
+
+    const k_reward_accumulated = await state.contracts.solidFoundry.k_reward_accumulated()
+    let int_k_reward_accumulated = parseInt(k_reward_accumulated);
+
+    const checkOne = int_k_reward_accumulated - new_reward
+    const checkTwo = checkOne * stakedBalance
+    const checkThree = checkTwo / 10 ** 24
+
+    let rewardsEth = toEthValue(checkThree);
+    state.claimRewardsValue = rewardsEth;
   },
   unapprove (state) {
     state.approve = null

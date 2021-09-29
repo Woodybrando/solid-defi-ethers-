@@ -15,19 +15,26 @@
           width="50px"
           @click="goHome"
         />
-        <vs-button class="airdrop_btn" @click="claimReward">
-          Claim
-        </vs-button>
+        <span class="dai_claim" @click="claimReward">
+          {{ Number(claimRewardsValue).toFixed(2) }}
+          <img
+            src="../assets/images/dai.png"
+            alt="dai"
+            width="20px"
+            class="ml-5"
+          />
+        </span>
       </template>
       <!-- to="/solidfoundry" -->
       <!-- @click="showComingSoon = true" -->
+      <!-- getFirstFourStrings(account) -->
       <template #right>
         <span v-if="isMetaMaskConnected">
           <span class="nav_accont">
             <b>{{ Number(ethBalance).toFixed(4) }} ETH</b>
             <span class="nav_address" @click="showAccounts = true">
               <span class="acc_span">{{ getFirstFourStrings(account) }}</span>
-              <span class="material-icons">
+              <span class="material-icons ml-5">
                 account_circle
               </span>
             </span>
@@ -115,9 +122,10 @@
                       </span>
                     </div>
 
-                    <span class="dai_pr">{{
-                      Number(daiBalance).toFixed(2)
+                    <span class="dai_pr" v-if="connected">{{
+                      Number(inputToken.balance).toFixed(2)
                     }}</span>
+                    <span class="dai_pr" v-else>0.0</span>
                   </div>
                 </div>
 
@@ -153,9 +161,10 @@
                       </span>
                     </div>
 
-                    <span class="dai_pr">{{
-                      Number(solidDaiBalance).toFixed(2)
+                    <span class="dai_pr" v-if="connected">{{
+                      Number(outputToken.balance).toFixed(2)
                     }}</span>
+                    <span class="dai_pr" v-else>0.0</span>
                   </div>
                 </div>
 
@@ -233,7 +242,9 @@
 
               <div>
                 <span class="d-block tt">TOTAL DAI LOCKED </span>
-                <span class="d-block pr">$700,000 </span>
+                <span class="d-block pr"
+                  >{{ Number(solidDaiContractBalance).toFixed(2) }}
+                </span>
               </div>
             </div>
 
@@ -383,6 +394,7 @@ export default {
   },
   data() {
     return {
+      connected: false,
       chartLoading: true,
       showChart: false,
       showAccounts: false,
@@ -396,6 +408,7 @@ export default {
         symbol: 'DAI',
         decimals: 18,
         chainId: 1,
+        balance: 0,
         logoURI:
           'https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.svg',
       },
@@ -403,6 +416,7 @@ export default {
         name: 'Solid',
         symbol: 'SLDDAI',
         logoURI: 'https://soliddefi.com/img/sld.a6af7737.png',
+        balance: 0,
       },
       tkn_selected: null,
       inputAmount: null,
@@ -505,6 +519,8 @@ export default {
       daiBalance: 'getDaiBalance',
       foundryTotalSupply: 'getSolidDaiSupply',
       solidDaiBalance: 'getSolidDaiBalance',
+      solidDaiContractBalance: 'getSolidDaiContractBalance',
+      claimRewardsValue: 'getRewardsValue',
       approve: 'getApproveValue',
     }),
 
@@ -521,6 +537,12 @@ export default {
     notApproved() {
       return this.approve == 0 || this.approve == null;
     },
+    // inputBalance() {
+    //   return (this.inputToken.balance = this.daiBalance);
+    // },
+    // outputBalance() {
+    //   return (this.outputToken.balance = this.solidDaiBalance);
+    // },
   },
   watch: {
     foundryTotalSupply: function(totSupp) {
@@ -529,9 +551,13 @@ export default {
       this.updatePrice(supplySqrt);
     },
   },
+  created() {},
   methods: {
     connectWallet() {
       this.$store.dispatch('connect');
+      this.inputToken.balance = this.daiBalance;
+      this.outputToken.balance = this.solidDaiBalance;
+      this.connected = true;
     },
     showTokenList(inputIndex) {
       this.tkn_selected = inputIndex;
@@ -568,14 +594,17 @@ export default {
         );
       }
     },
-    swapToken(input) {
-      let curToken = input;
+    swapToken(token) {
+      let currentToken = token;
       let outAmt = this.outputAmount;
+      let currentBalace = token.balance;
+
+      this.inputToken.balance = this.outputToken.balance;
       this.inputToken = this.outputToken;
-      this.outputToken = curToken;
+      this.outputToken = currentToken;
       this.outputAmount = this.inputAmount;
       this.inputAmount = outAmt;
-      this.foundryTotalSupply;
+      this.outputToken.balance = currentBalace;
     },
     approveBuy() {
       this.$store.dispatch('approveMintOnBuy');
@@ -590,7 +619,7 @@ export default {
       }
     },
     sellToken() {
-      this.burnOnSell(this.inputAmount);
+      this.$store.dispatch('burnOnSell', this.inputAmount);
       this.outputAmount = null;
       this.inputAmount = null;
     },

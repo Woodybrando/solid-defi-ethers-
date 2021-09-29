@@ -1713,3 +1713,18 @@ hr.hd_rule2 {
 .close_icon {
   cursor: pointer;
 }
+.dai_claim {
+  background: linear-gradient(315deg, #927c0d, #b67112);
+  display: flex;
+  margin-left: 10px;
+  align-items: center;
+    padding: 7px 8px;
+  color: rgb(218, 216, 216);
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 1rem;
+  font-family: Avenir,
+  Helvetica,
+  Arial,
+  sans-serif;
+}

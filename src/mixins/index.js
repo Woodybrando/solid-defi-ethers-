@@ -47,8 +47,10 @@ export default {
       }
       return graph;
     },
-    getFirstFourStrings (str) {
-      return str.substring(0, 5);
+    getFirstFourStrings (address) {
+      let firstStri = address.substring(0, 5)
+      let lastString = address.substr(38, 3)
+      return firstStri + '...' + lastString;
     },
     greaterThanSupply (curveArr, supply) {
       let appendNewCurve = curveArr.filter(function (curve) {
@@ -87,17 +89,9 @@ export default {
       return finalEstimate / 1000000000000000000
     },
     sellEstimate (sellAmount, totalSupply) {
-      const currSup = 1310370697104000000;
-      let amount = this.toWei(sellAmount);
-      let getAmount = parseInt(amount);
-      let newSellAmount = getAmount / 1000000000000000000;
-
-      // get total supply
-      let getSupp = totalSupply == null ? currSup : totalSupply == 'loading' ? currSup : totalSupply
-      let totalSupp = getSupp / 1000000000000000000;
+      let totalSupp = totalSupply == null ? 0 : totalSupply;
       console.log('sell', totalSupp);
-
-      let expect_amount = (Math.pow(totalSupp, 3 / 2) - Math.pow((totalSupp - newSellAmount), 3 / 2)) * 2 / 3;
+      let expect_amount = (Math.pow(totalSupp, 3 / 2) - Math.pow((totalSupp - sellAmount), 3 / 2)) * 2 / 3;
 
       return expect_amount;
     },
