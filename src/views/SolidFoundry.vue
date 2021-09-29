@@ -198,8 +198,8 @@
                       <b> SWAP</b>
                     </vs-button>
                     <vs-button
-                      :loading="approveLoading"
-                      v-if="approveLoading"
+                      :loading="notApproved"
+                      v-if="notApproved"
                       @click="approveBuy()"
                     >
                       Approve
@@ -383,7 +383,6 @@ export default {
   },
   data() {
     return {
-      approveLoading: false,
       chartLoading: true,
       showChart: false,
       showAccounts: false,
@@ -519,6 +518,9 @@ export default {
     buySolid() {
       return this.inputToken.symbol == 'DAI';
     },
+    notApproved() {
+      return this.approve == 0 || this.approve == null;
+    },
   },
   watch: {
     foundryTotalSupply: function(totSupp) {
@@ -573,24 +575,16 @@ export default {
       this.outputToken = curToken;
       this.outputAmount = this.inputAmount;
       this.inputAmount = outAmt;
-      this.approveLoading = false;
       this.foundryTotalSupply;
     },
     approveBuy() {
-      // this.approveLoading = true;
       this.$store.dispatch('approveMintOnBuy');
     },
     buyToken() {
-      if (
-        typeof this.approve == 'undefined' ||
-        this.approve == null ||
-        this.approve == 0
-      ) {
-        this.approveLoading = true;
+      if (this.notApproved) {
         this.$store.dispatch('approveMintOnBuy');
       } else {
         this.$store.dispatch('mintOnBuy', this.inputAmount);
-        this.approveLoading = false;
         this.outputAmount = null;
         this.inputAmount = null;
       }

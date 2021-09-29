@@ -18,13 +18,11 @@ const ADDR_DAI_ERC20 = '0x40ef836B1B8418F3ad17f7fA07eFE7c8dBBdC147'
 function divideBy18 (amt) {
   let etherValue = amt / 10 ** 18;
   // let toFixed = Number(etherValue).toFixed(2)
-
   return etherValue
 }
 
 const provider = new ethers.providers.Web3Provider(window.ethereum);
 const signer = provider.getSigner();
-
 
 const state = {
   account: null,
